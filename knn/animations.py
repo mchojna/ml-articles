@@ -177,7 +177,6 @@ class Distance3D(ThreeDScene):
         self.stop_ambient_camera_rotation()
         self.wait(0.4)
 
-
 # ---------- 4) CURSE OF DIMENSIONALITY ----------
 from manim import *
 import numpy as np
@@ -285,7 +284,7 @@ class CurseOfDimensionality(ThreeDScene):
 
         self.wait(2)
 
-# ---------- 5) OPTIONAL: MINKOWSKI BALLS IN 2D ----------
+# ---------- 5) MINKOWSKI BALLS IN 2D ----------
 class MinkowskiBalls2D(Scene):
     def construct(self):
         title = Text("Neighborhood shape depends on the metric (p-norm)").scale(0.8).to_edge(UP)
@@ -332,3 +331,112 @@ class MinkowskiBalls2D(Scene):
         takeaway = Text("Change the metric → change the neighbors → change the decision.", slant=ITALIC).scale(0.5).to_edge(DOWN)
         self.play(Write(takeaway))
         self.wait(1.5)
+        
+# ---------- 6) THUMBNAIL ---------- 
+class KNNVisualization(Scene):
+    def construct(self):
+        title = Text("K-Nearest Neighbors Algorithm").scale(0.8).to_edge(UP)
+        self.play(FadeIn(title))
+        
+        # Create axes
+        ax = Axes(
+            x_range=[-1, 6, 1],
+            y_range=[-1, 5, 1],
+            x_length=7, y_length=5,
+            axis_config={"include_tip": False, "include_numbers": False}
+        )
+        self.play(Create(ax))
+        
+        # Training data points
+        # Class A (blue circles)
+        class_a_points = [
+            ax.c2p(1, 1), ax.c2p(2, 1.5), ax.c2p(1.5, 2.5),
+            ax.c2p(0.5, 3), ax.c2p(2.5, 3.5)
+        ]
+        
+        # Class B (red squares)
+        class_b_points = [
+            ax.c2p(4, 1), ax.c2p(5, 1.5), ax.c2p(4.5, 2),
+            ax.c2p(5.5, 2.5), ax.c2p(4, 3.5)
+        ]
+        
+        # Create class A points (blue circles)
+        class_a_dots = VGroup(*[
+            Circle(radius=0.1, color=BLUE, fill_opacity=1).move_to(point)
+            for point in class_a_points
+        ])
+        
+        # Create class B points (red squares)
+        class_b_dots = VGroup(*[
+            Square(side_length=0.2, color=RED, fill_opacity=1).move_to(point)
+            for point in class_b_points
+        ])
+        
+        # Legend
+        legend_a = VGroup(
+            Circle(radius=0.1, color=BLUE, fill_opacity=1),
+            Text("Class A", color=BLUE).scale(0.5)
+        ).arrange(RIGHT, buff=0.2).to_corner(UR, buff=0.5)
+        
+        legend_b = VGroup(
+            Square(side_length=0.2, color=RED, fill_opacity=1),
+            Text("Class B", color=RED).scale(0.5)
+        ).arrange(RIGHT, buff=0.2).next_to(legend_a, DOWN, buff=0.2)
+        
+        self.play(
+            Create(class_a_dots),
+            Create(class_b_dots),
+            FadeIn(legend_a),
+            FadeIn(legend_b)
+        )
+        self.wait(1)
+        
+        # New point to classify (green star)
+        new_point_pos = ax.c2p(3, 2.5)
+        new_point = RegularPolygon(n=5, radius=0.15, color=GREEN, fill_opacity=1).move_to(new_point_pos)
+        new_point_label = Text("New Point", color=GREEN).scale(0.4).next_to(new_point, UP, buff=0.1)
+        
+        self.play(Create(new_point), FadeIn(new_point_label))
+        self.wait(0.5)
+        
+        # Show k=3 circle
+        k_value = Text("k = 3").scale(0.6).to_edge(DOWN, buff=0.5)
+        self.play(FadeIn(k_value))
+        
+        # Calculate distances and find 3 nearest neighbors
+        # For visualization, we'll manually select 3 closest points
+        nearest_points = [
+            (ax.c2p(2.5, 3.5), BLUE),  # Class A
+            (ax.c2p(4, 3.5), RED),     # Class B  
+            (ax.c2p(4.5, 2), RED)      # Class B
+        ]
+        
+        # Draw distance lines to k nearest neighbors
+        distance_lines = VGroup()
+        for point_pos, color in nearest_points:
+            line = DashedLine(new_point_pos, point_pos, color=GRAY)
+            distance_lines.add(line)
+        
+        self.play(Create(distance_lines))
+        self.wait(1)
+        
+        # Highlight the k nearest neighbors
+        highlights = VGroup()
+        for point_pos, color in nearest_points:
+            highlight = Circle(radius=0.25, color=YELLOW, stroke_width=4).move_to(point_pos)
+            highlights.add(highlight)
+        
+        self.play(Create(highlights))
+        self.wait(1)
+        
+        # Show voting result
+        voting_text = Text("Voting: 1 × Class A, 2 × Class B").scale(0.5).next_to(k_value, UP, buff=0.3)
+        result_text = Text("Prediction: Class B", color=RED).scale(0.6).next_to(voting_text, UP, buff=0.3)
+        
+        self.play(FadeIn(voting_text))
+        self.wait(0.5)
+        self.play(FadeIn(result_text))
+        
+        # Change new point color to predicted class
+        self.play(new_point.animate.set_color(RED))
+        self.wait(2)
